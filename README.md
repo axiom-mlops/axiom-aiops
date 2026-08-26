@@ -1,5 +1,12 @@
 # axiom-aiops — Agentic AIOps on a production-grade observability platform
 
+> **Agentic AIOps layer:** [axiom-aiops](https://github.com/axiom-mlops/axiom-aiops) — autonomous
+> incident-response agents built on this platform. An alert drives a full lifecycle:
+> evidence sweep across Prometheus/Loki/Kubernetes → structured root cause → a proposed fix from a
+> whitelisted action space → **human approval gate** → scoped execution → signal verification →
+> a runbook the agent writes from its own audit trail. Working demo + golden-scenario tests.
+
+
 Autonomous incident-response agents that detect, diagnose, propose, and remediate
 Kubernetes reliability issues — with a human approval gate before any change touches
 the cluster. Built on top of [axiom-platform](https://github.com/axiom-mlops/axiom-platform),
