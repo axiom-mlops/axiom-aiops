@@ -1,11 +1,11 @@
 """LLM backend behind a swappable interface.
 
 Design decision: the loop depends on a Protocol, not a vendor SDK.
-Why: (1) tests run deterministically against FakeLLM — golden scenarios
-in CI with zero API cost; (2) the serving backend is a deployment
-decision, not an architecture decision — the same loop runs against a
-prompted frontier model today and a QLoRA fine-tuned Qwen served by
-vLLM tomorrow, with no loop changes.
+Why: (1) golden-scenario tests run deterministically in CI at zero API
+cost; (2) the serving backend is a deployment decision, not an
+architecture decision. The same loop runs against a prompted frontier
+model and, later, a fine-tuned 9B-class open-weights model served by
+vLLM, with no changes to the loop.
 """
 from __future__ import annotations
 
@@ -16,18 +16,29 @@ from .contracts import Alert, Diagnosis, Evidence, ProposedPatch
 
 
 class LLMBackend(Protocol):
+    """Contract every backend satisfies: structured in, structured out."""
+
+    model_id: str
+
     def diagnose(self, alert: Alert, evidence: list[Evidence]) -> Diagnosis: ...
 
     def propose(self, alert: Alert, diagnosis: Diagnosis) -> ProposedPatch: ...
 
 
-class FakeLLM:
-    """Deterministic backend encoding the HPA memory blind-spot playbook.
+class DeterministicBackend:
+    """Reference backend encoding the HPA memory blind-spot playbook.
 
-    Exists so the loop's control flow, gating and verification are
-    testable independently of model quality. This is the golden-scenario
-    oracle, not a mock of intelligence.
+    Not a model and not a mock of one -- it is the golden-scenario oracle.
+    Its purpose is to make the loop's control flow, gating, and verification
+    testable independently of model quality, so a backend swap becomes a
+    measurable change rather than a leap of faith.
+
+    Backends targeted for the live path:
+      - frontier-class hosted model (baseline; establishes the quality bar)
+      - 9B-class open-weights model, QLoRA-tuned, vLLM-served on-prem
     """
+
+    model_id = "deterministic-reference-v1"
 
     def diagnose(self, alert: Alert, evidence: list[Evidence]) -> Diagnosis:
         mem = any("memory" in e.finding.lower() for e in evidence)
@@ -72,8 +83,8 @@ class FakeLLM:
 
 
 def render_prompt(alert: Alert, evidence: list[Evidence]) -> str:
-    """Prompt for real backends (vLLM/OpenAI-compatible). Kept here so the
-    fine-tuned model and the prompted model share one instruction surface."""
+    """Instruction surface shared by every model-backed implementation, so the
+    prompted baseline and the fine-tuned model are compared on equal footing."""
     return (
         "You are an SRE diagnosis agent. Given the alert and evidence, "
         "return ONLY JSON matching the Diagnosis schema.\n"

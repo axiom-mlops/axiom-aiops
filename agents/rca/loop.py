@@ -23,7 +23,7 @@ from __future__ import annotations
 
 from .contracts import Alert, Diagnosis, Evidence, IncidentRecord
 from .gate import AutoApproveGate
-from .llm import FakeLLM, LLMBackend
+from .llm import DeterministicBackend, LLMBackend
 from .tools import ActTools, ReadTools
 
 INVESTIGATION_PLAN = [
@@ -55,7 +55,7 @@ def run_incident(
     gate=None,
 ) -> IncidentRecord:
     """Drive one alert through the full lifecycle. Returns the audit record."""
-    llm = llm or FakeLLM()
+    llm = llm or DeterministicBackend()
     reads = reads or ReadTools()
     acts = acts or ActTools()
     gate = gate or AutoApproveGate()
